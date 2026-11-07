@@ -11,15 +11,22 @@ src, out = sys.argv[1], sys.argv[2]; os.makedirs(out, exist_ok=True); SR = 16000
 raw = subprocess.run(["ffmpeg", "-v", "error", "-i", src, "-vn", "-ac", "1", "-ar", str(SR), "-f", "f32le", "-"], capture_output=True).stdout
 x = np.frombuffer(raw, np.float32); dur = len(x) / SR
 BAD = ["اشتركوا في القناة", "ترجمة نانسي قنقر", "شكرا للمشاهدة"]
+# 🗣️ WHISPER_PROMPT=syrian (أو مسار ملف نصي) يعطي وِسبر عيّنة لهجة؛ اختبر أثره بـ02e_dialect_bench.py. الافتراضي: بلا برومبت
+PROMPT = None
+_wp = os.environ.get("WHISPER_PROMPT", "")
+if _wp:
+    PROMPT = ("شو يا جماعة، هلق رح نحكي عن الإعلانات على ميتا. كتير مهم تعرفوا ليش الحملة ما عم تجيب نتيجة، "
+              "بدك تجرّب هيك وهيك، مو كل شي بيمشي. منيح، يعني بدنا ميزانية أقل وتارغيت أحسن، ولسا في كريتيف.") if _wp == "syrian" \
+             else open(_wp, encoding="utf-8").read().strip()
 try:
     import mlx_whisper
     def tr(seg): return mlx_whisper.transcribe(seg, path_or_hf_repo="mlx-community/whisper-large-v3-turbo", language="ar",
-                                               word_timestamps=True, condition_on_previous_text=False)
+                                               word_timestamps=True, condition_on_previous_text=False, initial_prompt=PROMPT)
     ENG = "mlx turbo"
 except ImportError:
     import whisper
     _m = whisper.load_model(os.environ.get("WHISPER_MODEL", "turbo"))
-    def tr(seg): return _m.transcribe(seg, language="ar", word_timestamps=True, condition_on_previous_text=False, fp16=False)
+    def tr(seg): return _m.transcribe(seg, language="ar", word_timestamps=True, condition_on_previous_text=False, fp16=False, initial_prompt=PROMPT)
     ENG = "openai-whisper"
 hop = SR // 100; db = 20 * np.log10(np.sqrt(np.convolve(x[:len(x)//hop*hop].reshape(-1, hop).var(1) + 1e-12, np.ones(25) / 25, "same")) + 1e-9)
 def cut_near(t):                       # أهدأ نقطة بين t-6 و t+6
