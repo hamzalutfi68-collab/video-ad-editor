@@ -228,6 +228,10 @@ python3 scripts/03_cut_zoom.py <work>
 mkdir -p <work>/vfr && ffmpeg -v error -i <work>/cutz.mp4 -vf fps=30 -q:v 3 -y <work>/vfr/%05d.jpg
 ```
 ```
+🎛️ **أنماط جاهزة بأمر واحد (6.5):** `python3 scripts/38_preset.py <work> <نمط>` — clean (هادي) · pop (ريلز سريع) · cinematic · bold · glitch · slide. يضبط الانتقالات والحركات والإيقاع بـtheme.json (النسخة القديمة تنحفظ). `--audio` يشغّل دكتور الصوت.
+الترتيب: النمط ← `03_cut_zoom.py` ← `python3 scripts/38_preset.py <work> --whoosh` (يضيف ووش/ثَد/glitch عند كل انتقال بـsfx.json) ← `05_sfx.py`. القائمة: `38_preset.py list`.
+```
+```
 🎞️ **انتقالات + حركات كاميرا (6.5)** — اختياري، بـ`theme.json` (الافتراضي مطفي = قطع مباشر). مدة الفيديو ما تتغيّر أبداً فالكابشنز والـSFX تبقى مضبوطة:
 `{"transitions":"auto","moves":{"first":"breathe"}}` — أول لقطة zoom in/out (breathe)، والباقي حركات متنوعة.
 • `transitions`: `auto|clean|pop|cinematic|glitch|bold|slide|geometric|off` أو `{"style":"pop","dur":0.25,"seed":7,"overrides":{"2":"glitch"},"off":[4]}` (الأرقام من 1)
