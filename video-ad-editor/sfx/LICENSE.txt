@@ -1,0 +1,27 @@
+Saoud SFX Pack — @saoudalajme
+==============================
+
+All 715 sounds in this pack are free to use in personal and commercial
+projects, and free to share and redistribute.
+
+License: CC0 1.0 Universal (Public Domain Dedication)
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Sources
+-------
+1) Kenney (www.kenney.nl) — released under CC0:
+   Impact Sounds, Interface Sounds, UI Audio, Digital Audio,
+   Sci-Fi Sounds, RPG Audio, Casino Audio, Music Jingles.
+   Files from these packs keep a prefix: impact_, interface_, ui_,
+   digital_, sci_, rpg_, casino_, music_.
+   Credit to Kenney is appreciated but not required.
+
+2) Original sounds made by @saoudalajme (procedural synthesis),
+   released under CC0: all files without a pack prefix
+   (whoosh_*, swipe_*, riser_*, downlifter_*, reverse_swell_*, etc.).
+
+No credit required. Enjoy!
+
+-----------------------------------------------------------------
+الملف مجاني بالكامل (CC0): تقدر تستخدمه في أي مشروع شخصي أو تجاري
+وتشاركه مع غيرك بدون أي قيود.

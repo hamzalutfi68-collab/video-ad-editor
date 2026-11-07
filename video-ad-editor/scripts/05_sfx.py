@@ -69,7 +69,8 @@ def click(dur=0.025):             # زر واجهة / اختيار
 def typing(dur=0.8,cps=12):      # كتابة حرف حرف
     L=int(dur*SR); o=np.zeros(L); k=click(0.02)
     for i in range(int(dur*cps)):
-        j=int((i/cps+rng.uniform(-0.01,0.01))*SR); j=max(0,min(L-len(k),j)); o[j:j+len(k)]+=k*rng.uniform(0.5,1.0)
+        kk=PICK("click",click,0.02) if (LIB and LIB.has("click")) else k   # 🆕 6.4: ضغطة مختلفة لكل حرف من المكتبة
+        j=int((i/cps+rng.uniform(-0.01,0.01))*SR); j=max(0,min(L-len(kk),j)); o[j:j+len(kk)]+=kk*rng.uniform(0.5,1.0)
     return o/(np.max(np.abs(o))+1e-9)
 def shimmer(dur=0.9):            # لمعة/تظليل كلمة مهمة
     L=int(dur*SR); t=np.arange(L)/SR; s=sum(np.sin(2*np.pi*f*t)*np.exp(-t/(0.25+0.1*i)) for i,f in enumerate([1760,2217,2637,3520]))
@@ -82,23 +83,41 @@ def glitch(dur=0.28):            # خلل/خطأ/انكسار
     for _ in range(7):
         a=rng.randint(0,L-800); b=a+rng.randint(300,1600); b=min(b,L); s[a:b]+=np.round(rng.randn(b-a)*3)/3*rng.uniform(.4,1)
     return s/(np.max(np.abs(s))+1e-9)
-for te,d0 in _s.get("riser",[]):  r=riser(d0); add(r,te-d0,0.07)
-for t0 in _s.get("pop",[]):       add(pop(),t0,0.09)
-for t0 in _s.get("click",[]):     add(click(),t0,0.08)
+# 🆕 6.4: أصوات حقيقية (WAV) من مكتبة sfx_lib لو موجودة — صنف/حدث ناقص يرجع للمولَّد. VAD_SFX_SYNTH=1 يجبر المولَّد.
+LIB=None
+try:
+    sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
+    import sfx_lib
+    if os.environ.get("VAD_SFX_SYNTH")!="1": LIB=sfx_lib.load()
+except Exception as _e:
+    print("⚠️ مكتبة الأصوات ما اشتغلت — أكمل بالمولَّدة:",str(_e)[:80])
+def _rms(fn,*a):                       # مستوى الصوت المولَّد الأصلي (بلا ما نخرّب تسلسل rng) — نعاير عليه الصوت الحقيقي
+    st=rng.get_state(); x=fn(*a); rng.set_state(st); m=np.abs(x)>np.abs(x).max()*0.01
+    return float(np.sqrt(np.mean(x[m]**2)))
+def PICK(ev,fn,*a,want=None):
+    if LIB and LIB.has(ev):
+        y=LIB.get(ev,_rms(fn,*a),want)
+        if y is not None: return y
+    return fn(*a)
+print("🎚️ مكتبة الأصوات:",LIB.root if LIB else "مولَّدة (ما لقيت مكتبة)")
+for te,d0 in _s.get("riser",[]):  r=PICK("riser",riser,d0,want=d0); add(r,te-len(r)/SR,0.07)
+for t0 in _s.get("pop",[]):       add(PICK("pop",pop),t0,0.09)
+for t0 in _s.get("click",[]):     add(PICK("click",click),t0,0.08)
 for t0,d0 in _s.get("type",[]):   add(typing(d0),t0,0.06)
-for t0 in _s.get("shimmer",[]):   add(shimmer(),t0,0.05)
-for t0 in _s.get("sub",[]):       add(sub(),t0,0.22)
-for t0 in _s.get("glitch",[]):    add(glitch(),t0,0.07)
+for t0 in _s.get("shimmer",[]):   add(PICK("shimmer",shimmer),t0,0.05)
+for t0 in _s.get("sub",[]):       add(PICK("sub",sub),t0,0.22)
+for t0 in _s.get("glitch",[]):    add(PICK("glitch",glitch),t0,0.07)
 # 🔢 تكات العدّاد (motion-kit): "counter":[[بداية, مدة]] — تكات كثيفة بالبداية وتتباعد مثل MK.odometer (eExpo)
 for c0,d0 in _s.get("counter",[]):
+    base=PICK("counter",tick,2400) if (LIB and LIB.has("counter")) else None
     for i in range(1,24):
         q=i/24.0; k=np.log2(1/(1-q))/10.0
-        add(tick(2200+i*40),c0+k*d0,0.09)
-for t0 in _s.get("whoosh_up",[]):   add(W1,t0,0.085)
-for t0 in _s.get("whoosh_down",[]): add(W2,t0,0.075)
-for t0 in _s.get("thud",[]):        add(TH,t0,0.115)
-for t0 in _s.get("tap",[]):         add(TP,t0,0.075)
-for t0,g in _s.get("soft",[]):      add(W1,t0,g)          # ووش بقوة تختارها: [[ثانية, قوة]] — العادي 0.085، الخفيف جداً 0.035
+        add(sfx_lib.pitch(base,(2200+i*40)/2400.0) if base is not None else tick(2200+i*40),c0+k*d0,0.09)
+for t0 in _s.get("whoosh_up",[]):   add(PICK("whoosh_up",lambda:W1),t0,0.085)
+for t0 in _s.get("whoosh_down",[]): add(PICK("whoosh_down",lambda:W2),t0,0.075)
+for t0 in _s.get("thud",[]):        add(PICK("thud",lambda:TH),t0,0.115)
+for t0 in _s.get("tap",[]):         add(PICK("tap",lambda:TP),t0,0.075)
+for t0,g in _s.get("soft",[]):      add(PICK("soft",lambda:W1),t0,g)          # ووش بقوة تختارها: [[ثانية, قوة]] — العادي 0.085، الخفيف جداً 0.035
 buf=np.clip(buf,-0.95,0.95)
 pcm=(buf*32767).astype('<i2')
 st=np.repeat(pcm[:,None],2,axis=1).ravel()

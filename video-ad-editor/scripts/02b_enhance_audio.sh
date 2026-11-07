@@ -3,6 +3,7 @@
 #   الطريق الأول (الأفضل): أداة أدوبي «Enhance Speech» عبر كونكتور أدوبي داخل كلود — كلود هو اللي يناديها، مو هذا السكربت:
 #     يرفع src.mov لأدوبي (asset_initialize_file_upload → PUT → asset_finalize_file_upload) ← media_enhance_speech(assetId)
 #     ← ينزّل مسار الكلام النظيف ← يشغّل هذا السكربت لدمجه:   bash 02b_enhance_audio.sh <work> <clean.wav|.mp4|.m4a>
+#   🆕 الأذكى (مروحة + ضجيج + صدى): bash 02b_enhance_audio.sh <work> --doctor [القوة] [قوة-الصدى]
 #   الطريق الثاني (بلا أدوبي): على الجهاز — DeepFilterNet3 لو منصّب (00_setup.sh --extras) وإلا ffmpeg:
 #                                                            bash 02b_enhance_audio.sh <work> --local [0.85]
 #   النتيجة: src.mov يصير بالصوت المحسّن (الأصل يُحفظ src_rawaudio.mov) — سوّها قبل التفريغ (الخطوة 4) حتى يسمع وِسبر صوتاً نظيفاً.
@@ -11,7 +12,11 @@ set -e
 W="${1%/}"; SRC="$W/src.mov"; IN="$2"
 [ -f "$SRC" ] || { echo "❌ ما لقيت $SRC"; exit 1; }
 [ -f "$W/src_rawaudio.mov" ] || cp "$SRC" "$W/src_rawaudio.mov"
-if [ "$IN" = "--local" ] || [ "$IN" = "--ai" ]; then
+if [ "$IN" = "--doctor" ]; then
+  # 🩺 دكتور الصوت: يفحص مروحة/ضجيج/صدى ويختار العلاج + تقرير قبل/بعد بـ <work>/audio_report.txt
+  #    bash 02b_enhance_audio.sh <work> --doctor [القوة] [قوة-الصدى auto|0..1]
+  "$PY" "$(dirname "$0")/02d_audio_doctor.py" "$W" --strength "${3:-0.85}" --dereverb "${4:-auto}"
+elif [ "$IN" = "--local" ] || [ "$IN" = "--ai" ]; then
   # 🆕 v3.9: 02c_denoise.py — DeepFilterNet3 على الجهاز لو منصّب (00_setup.sh --extras)، وإلا ffmpeg العادي.
   #    القوة (0..1) اختيارية كوسيط ثالث: bash 02b_enhance_audio.sh <work> --local 0.7
   ENG=auto; [ "$IN" = "--ai" ] && ENG=dfn
