@@ -344,6 +344,11 @@ python3 scripts/29_handtrack.py <work> <من> <إلى>
 python3 scripts/05_sfx.py <work>
 ```
 
+🎚️ **أصوات حقيقية (6.4):** `05_sfx.py` يقرأ مكتبة WAV لو موجودة ويختار صوتاً حقيقياً لكل حدث (whoosh للقص، pop لظهور النص، riser قبل الكشف، thud/sub، glitch، تكات العدّاد…)، ويعايره على مستوى الأصوات المولَّدة فيبقى توازن المكس. صنف ناقص ← يرجع للمولَّد لذاك الحدث.
+- المكتبة (أول موجود): `VAD_SFX_DIR` ← `~/.video-ad-editor/sfx` ← `<السكل>/sfx` (فيه 24 صوت CC0 مرفقة).
+- حزمة كاملة: `python3 scripts/sfx_lib.py install <pack.zip>` (يفك الأسماء العربية صح لـ `~/.video-ad-editor/sfx`) ثم `python3 scripts/sfx_lib.py list` يوريك شو انتعرف.
+- الأصناف تنتعرف من اسم الملف (`whoosh_*` `swipe_*` `riser_*` `pop` `tick` `click` `ding` `sparkle` `glitch` `boom` `low_thud`…) مو من المجلد. `VAD_SFX_SYNTH=1` يجبر الأصوات المولَّدة.
+
 ### 9) الرسم النهائي والتجميع
 
 ```bash
