@@ -264,6 +264,11 @@ h2{font-size:18px;margin:0;font-weight:700}
   .qs{margin-right:0}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.imgcol{display:grid;gap:10px}.imgrow{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+#colCv{width:84px;height:84px;border-radius:12px;border:1px solid var(--line);object-fit:cover}
+.sw{display:flex;gap:8px;flex-wrap:wrap}.sw button{width:44px;height:44px;border-radius:12px;border:2px solid var(--line);cursor:pointer;padding:0}
+.sw button.a{outline:3px solid var(--acc);outline-offset:2px}.sw button.b{box-shadow:0 0 0 3px var(--ink3) inset}
+.seg{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--ink2,var(--ink3))}
 </style>
 </head>
 <body>
@@ -282,9 +287,9 @@ h2{font-size:18px;margin:0;font-weight:700}
 
 <div class="quick">
   <label for="note">اكتب اللي تبيه وخلّ الباقي علي</label>
-  <textarea id="note" name="note" placeholder="مثلاً: إعلان لمطعمي، ألوان الشعار أحمر وأبيض، إيقاع سريع، وبالنهاية «احجز الحين»"></textarea>
+  <textarea id="note" name="note" maxlength="10000" placeholder="مثلاً: إعلان لمطعمي، ألوان الشعار أحمر وأبيض، إيقاع سريع، وبالنهاية «احجز الحين»"></textarea>
   <div class="row">
-    <span class="hint">تبي تختصر؟ اكتب هني واضغط تخطّ — أو كمّل تحت.</span>
+    <span class="hint">تبي تختصر؟ اكتب هني واضغط تخطّ — أو كمّل تحت. <b id="noteN">0 من 10000</b></span>
     <button type="button" class="btn btn-ghost" id="skipBtn">تخطّ الأسئلة وابدأ</button>
   </div>
 </div>
@@ -296,6 +301,7 @@ h2{font-size:18px;margin:0;font-weight:700}
   <div class="tabs" role="tablist">
     <button type="button" class="tab" role="tab" data-tab="palette" aria-selected="true">ألوان جاهزة</button>
     <button type="button" class="tab" role="tab" data-tab="custom" aria-selected="false">أختارها بنفسي</button>
+    <button type="button" class="tab" role="tab" data-tab="image" aria-selected="false">من صورة</button>
     <button type="button" class="tab" role="tab" data-tab="url" aria-selected="false">من موقعي أو حسابي</button>
   </div>
   <div class="panel" data-panel="palette"><div class="grid g-pal" id="pals"></div></div>
@@ -307,6 +313,16 @@ h2{font-size:18px;margin:0;font-weight:700}
     </div>
     <p class="cwarn" id="cwarn" hidden>لون التمييز قريب من الخلفية — الكلمة المميزة ما راح تبان زين. جرّب لون أغمق أو أفتح.</p>
   </div>
+  <div class="panel" data-panel="image" hidden>
+    <div class="imgcol">
+      <label class="btn btn-ghost filebtn">ارفع صورة (لوغو · منتج · صورة تعجبك)<input type="file" id="colImgIn" accept="image/png,image/jpeg,image/webp"></label>
+      <div class="imgrow"><canvas id="colCv" width="120" height="120" hidden></canvas><div id="sw" class="sw"></div></div>
+      <div class="seg" id="roleSeg" hidden><span>اضغط لون ثم:</span>
+        <label><input type="radio" name="imgRole" value="acc" checked> خلّيه لون التمييز</label>
+        <label><input type="radio" name="imgRole" value="bg"> خلّيه الخلفية</label></div>
+      <p class="qs" id="imgHint">أطلّع ألوان الصورة الرئيسية وأعطيك 6 خيارات. النص يتحدد تلقائياً ليكون واضح فوق الخلفية. تعدّلها بعدين من «أختارها بنفسي».</p>
+    </div>
+  </div>
   <div class="panel" data-panel="url" hidden>
     <div class="field">
       <input type="url" name="url" class="ltr" placeholder="https://instagram.com/yourname  أو  https://yoursite.com" inputmode="url">
@@ -314,8 +330,10 @@ h2{font-size:18px;margin:0;font-weight:700}
     </div>
   </div>
   <div class="logo-row">
-    <div class="logo-prev" id="logoPrev">شعار</div>
-    <label class="btn btn-ghost filebtn">ارفع شعارك (اختياري)<input type="file" id="logoIn" accept="image/png,image/jpeg,image/webp,image/svg+xml"></label>
+    <label class="logo-prev" id="logoPrev" title="اضغط لتغيير الشعار" style="cursor:pointer">شعار<input type="file" id="logoIn2" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden></label>
+    <label class="btn btn-ghost filebtn" id="logoBtn">ارفع شعارك (اختياري)<input type="file" id="logoIn" accept="image/png,image/jpeg,image/webp,image/svg+xml"></label>
+    <button type="button" class="btn btn-ghost" id="logoCols" hidden>خذ ألوان الشعار</button>
+    <button type="button" class="btn btn-ghost" id="logoDel" hidden>احذف الشعار</button>
   </div>
 </section>
 
@@ -563,14 +581,14 @@ function onColor(acc,ink,bg){ /* النص فوق لون التمييز — نف�
 function mix(a,b,k){const A=hx(a),B=hx(b);return toHex(A.map((v,i)=>v+(B[i]-v)*k));}
 let idMode='palette';
 function currentColors(){
-  if(idMode==='custom'){const f=$('#f'); const bg=f.c_bg.value.toUpperCase(), ink=f.c_ink.value.toUpperCase(), acc=f.c_acc.value.toUpperCase();
+  if(idMode==='custom'||idMode==='image'){const f=$('#f'); const bg=f.c_bg.value.toUpperCase(), ink=f.c_ink.value.toUpperCase(), acc=f.c_acc.value.toUpperCase();
     return {bg,ink,acc,clay:mix(acc,'#000000',0.22),mut:mix(bg,ink,0.55)};}
   const id=($('input[name=palette]:checked')||{}).value; const p=PALETTES.find(x=>x.id===id);
   return p?{bg:p.bg,ink:p.ink,acc:p.acc,clay:p.clay,mut:p.mut}:null;
 }
 function applyPreview(){
   const c=currentColors()||PALETTES[0]; const r=document.documentElement.style;
-  const w=$('#cwarn'); if(w) w.hidden=!(idMode==='custom'&&(contrast(c.acc,c.bg)<1.8||contrast(onColor(c.acc,c.ink,c.bg),c.acc)<3));
+  const w=$('#cwarn'); if(w) w.hidden=!((idMode==='custom'||idMode==='image')&&(contrast(c.acc,c.bg)<1.8||contrast(onColor(c.acc,c.ink,c.bg),c.acc)<3));
   r.setProperty('--p-bg',c.bg); r.setProperty('--p-ink',c.ink); r.setProperty('--p-acc',c.acc); r.setProperty('--p-on',onColor(c.acc,c.ink,c.bg));
   const f=($('input[name=font]:checked')||{}).value; r.setProperty('--p-font',(f&&f!=='auto')?`'${f}'`:"'Cairo'");
 }
@@ -609,16 +627,50 @@ function setRadio(name,v){const i=$(`input[name="${name}"][value="${v}"]`); if(i
 $$('.tab').forEach(t=>t.addEventListener('click',()=>{
   idMode=t.dataset.tab; $$('.tab').forEach(x=>x.setAttribute('aria-selected',x===t));
   $$('.panel').forEach(p=>p.hidden=p.dataset.panel!==idMode);
-  if(idMode==='custom') touched.add('identity');
+  if(idMode==='custom'||idMode==='image') touched.add('identity');
   applyPreview(); progress();
 }));
 
 /* الشعار */
-let logoData=null;
-$('#logoIn').addEventListener('change',e=>{ const file=e.target.files[0]; if(!file) return;
+let logoData=null, logoDel=false;
+function setLogo(file){ if(!file) return;
   if(file.size>6*1024*1024){ toast('الشعار كبير — أقل من 6 ميقا لو سمحت'); return; }
-  const rd=new FileReader(); rd.onload=()=>{ logoData={name:file.name,data:rd.result};
-    $('#logoPrev').innerHTML=`<img alt="" src="${rd.result}">`; touched.add('identity'); progress(); }; rd.readAsDataURL(file); });
+  const rd=new FileReader(); rd.onload=()=>{ logoData={name:file.name,data:rd.result}; logoDel=false; showLogo(rd.result); touched.add('identity'); progress(); }; rd.readAsDataURL(file); }
+function showLogo(src){ $('#logoPrev').innerHTML=`<img alt="" src="${src}"><input type="file" id="logoIn2" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>`;
+  $('#logoIn2').addEventListener('change',e=>{setLogo(e.target.files[0]);e.target.value='';});
+  $('#logoBtn').firstChild.textContent='غيّر الشعار'; $('#logoCols').hidden=false; $('#logoDel').hidden=false; }
+$('#logoIn').addEventListener('change',e=>{ setLogo(e.target.files[0]); e.target.value=''; });
+$('#logoIn2').addEventListener('change',e=>{ setLogo(e.target.files[0]); e.target.value=''; });
+$('#logoDel').addEventListener('click',()=>{ logoData=null; logoDel=true; $('#logoPrev').innerHTML='شعار<input type="file" id="logoIn2" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>';
+  $('#logoIn2').addEventListener('change',e=>{setLogo(e.target.files[0]);e.target.value='';}); $('#logoBtn').firstChild.textContent='ارفع شعارك (اختياري)'; $('#logoCols').hidden=true; $('#logoDel').hidden=true; });
+$('#logoCols').addEventListener('click',()=>{ const im=$('#logoPrev img'); if(!im) return; $('.tab[data-tab="image"]').click(); colorsFromImg(im.src); });
+
+/* ألوان من صورة */
+function colorsFromImg(src){ const img=new Image(); img.onload=()=>{
+  const cv=$('#colCv'), cx=cv.getContext('2d',{willReadFrequently:true}); const k=Math.min(120/img.width,120/img.height,1);
+  cv.width=Math.max(8,Math.round(img.width*k)); cv.height=Math.max(8,Math.round(img.height*k)); cx.clearRect(0,0,cv.width,cv.height); cx.drawImage(img,0,0,cv.width,cv.height); cv.hidden=false;
+  const d=cx.getImageData(0,0,cv.width,cv.height).data, B=new Map();
+  for(let i=0;i<d.length;i+=4){ if(d[i+3]<128) continue; const r=d[i],g=d[i+1],b=d[i+2], key=(r>>4)<<8|(g>>4)<<4|(b>>4);
+    const o=B.get(key)||{n:0,r:0,g:0,b:0}; o.n++;o.r+=r;o.g+=g;o.b+=b;B.set(key,o); }
+  const sat=c=>{const m=Math.max(...c),n=Math.min(...c);return m?(m-n)/m:0;};
+  const all=[...B.values()].map(o=>{const c=[o.r/o.n,o.g/o.n,o.b/o.n];return {c,n:o.n,s:sat(c)};}).sort((a,b)=>b.n-a.n);
+  const pick=[]; for(const o of all){ if(pick.length>=6) break; if(pick.every(p=>Math.hypot(p.c[0]-o.c[0],p.c[1]-o.c[1],p.c[2]-o.c[2])>60)) pick.push(o); }
+  if(!pick.length){ toast('ما قدرت أطلّع ألوان من الصورة'); return; }
+  const hex=pick.map(o=>toHex(o.c.map(Math.round)));
+  const dark=hex.map((c,i)=>[i,lum(c)]).sort((a,b)=>a[1]-b[1])[0]; const bgHex=dark[1]<0.2?hex[dark[0]]:'#0F172A';
+  const cand=pick.map((o,i)=>[i,o.s*Math.pow(o.n,0.35)]).filter(x=>hex[x[0]]!==bgHex).sort((a,b)=>b[1]-a[1]);
+  const accI=cand.length?cand[0][0]:0;
+  window.__sw={hex,acc:hex[accI],bg:bgHex}; applyImg(); $('#roleSeg').hidden=false; };
+  img.src=src; }
+function applyImg(){ const S=window.__sw, f=$('#f'); if(!S) return;
+  const ink=contrast('#F9FAFB',S.bg)>=contrast('#111827',S.bg)?'#F9FAFB':'#111827';
+  f.c_bg.value=S.bg.toLowerCase(); f.c_acc.value=S.acc.toLowerCase(); f.c_ink.value=ink.toLowerCase();
+  $('#sw').innerHTML=S.hex.map(c=>`<button type="button" data-c="${c}" style="background:${c}" aria-label="${c}" class="${c===S.acc?'a':''} ${c===S.bg?'b':''}"></button>`).join('');
+  touched.add('identity'); applyPreview(); progress(); }
+$('#sw').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b||!window.__sw) return; const role=($('input[name=imgRole]:checked')||{}).value||'acc';
+  window.__sw[role]=b.dataset.c; applyImg(); });
+$('#colImgIn').addEventListener('change',e=>{ const fl=e.target.files[0]; if(!fl) return; const rd=new FileReader(); rd.onload=()=>colorsFromImg(rd.result); rd.readAsDataURL(fl); e.target.value=''; });
+$('#note').addEventListener('input',e=>{ $('#noteN').textContent=e.target.value.length+' من 10000'; });
 
 function filterVoices(){ const sx=val('voiceSex'); $$('#vlist .vopt[data-sex]').forEach(l=>{ l.hidden=(sx==='m'||sx==='f')&&l.dataset.sex!==sx; }); }
 /* عيّنات الأصوات */
@@ -650,9 +702,9 @@ function collect(){
   const f=$('#f');
   let identity={mode:'auto'};
   if(idMode==='palette'&&$('input[name=palette]:checked')){ identity={mode:'palette',palette:val('palette'),colors:currentColors()}; }
-  else if(idMode==='custom'){ identity={mode:'custom',colors:currentColors()}; }
+  else if(idMode==='custom'||idMode==='image'){ identity={mode:'custom',colors:currentColors()}; }
   else if(idMode==='url'&&f.url.value.trim()){ identity={mode:'url',url:f.url.value.trim()}; }
-  if(logoData) identity.logo=logoData;
+  if(logoData) identity.logo=logoData; else if(logoDel) identity.logo=false;
   const vm=val('voiceMode');
   return {
     version:1, skip:false, note:f.note.value.trim(),
@@ -695,7 +747,7 @@ async function prefill(){
   if(id.mode==='palette'&&id.palette){ setRadio('palette',id.palette); }
   else if(id.mode==='custom'&&id.colors){ ['bg','ink','acc'].forEach(k=>{ if(id.colors[k]) f['c_'+k].value=id.colors[k].toLowerCase(); }); $('.tab[data-tab="custom"]').click(); }
   else if(id.mode==='url'&&id.url){ f.url.value=id.url; $('.tab[data-tab="url"]').click(); }
-  if(id.logo&&typeof id.logo==='string'){ $('#logoPrev').innerHTML=`<img alt="" src="/api/logo">`; }
+  if(id.logo&&typeof id.logo==='string'){ showLogo('/api/logo'); }
   const R=(n,v)=>{ if(v&&v!=='auto') setRadio(n,v); };
   R('font',p.font); R('capStyle',p.capStyle); R('digits',p.digits); R('pace',p.pace);
   if(p.content){R('ctype',p.content.type);R('person',p.content.person);}

@@ -131,14 +131,14 @@ def clean(obj):
     obj.setdefault("version", 1)
     obj["savedAt"] = time.strftime("%Y-%m-%dT%H:%M:%S%z")
     if obj.get("skip"):
-        note = str(obj.get("note") or "")[:4000]
+        note = str(obj.get("note") or "")[:10000]
         prev = load_profile()
         if prev and not prev.get("skip"):
             # مستخدم راجع ضغط «تخطّ» = خلّ اختياراتي القديمة كما هي، بس حدّث الملاحظة
             prev.update(note=note, savedAt=obj["savedAt"], keptPrevious=True)
             return prev
         return {"version": 1, "skip": True, "note": note, "savedAt": obj["savedAt"]}
-    obj["note"] = str(obj.get("note") or "")[:4000]
+    obj["note"] = str(obj.get("note") or "")[:10000]
     idn = dict(obj.get("identity") or {"mode": "auto"})
     if idn.get("mode") == "palette" and not idn.get("colors"):
         idn["colors"] = PALETTES.get(idn.get("palette"))
@@ -162,6 +162,10 @@ def clean(obj):
         dst = HOME / ("logo" + ext)
         dst.write_bytes(raw)
         idn["logo"] = str(dst)
+    elif lg is False:                                   # «احذف الشعار» من الصفحة
+        idn.pop("logo", None)
+        for old in HOME.glob("logo.*"):
+            old.unlink()
     elif lg is not None and not isinstance(lg, str):
         idn.pop("logo", None)
     elif lg is None:
