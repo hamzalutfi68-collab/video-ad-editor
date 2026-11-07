@@ -79,12 +79,22 @@ else:
         cw=int(SW/z)//2*2; ch=int(SH/z)//2*2
         x=(SW-cw)//2; y=int((SH-ch)*ANCH)
         PIECES.append((s,e,f"crop={cw}:{ch}:{x}:{y}"))
+# 🎞️ v6.5 انتقالات + حركات كاميرا (theme.json ← "transitions" / "moves") — الافتراضي مطفي = قطع مباشر زي قبل
+sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
+import _transitions
+_TP=_transitions.setup(_th,_cj,PIECES,calm=CALM,work=W)
+if _TP:
+    print("🎞️ انتقالات:", " · ".join(f"{c['n']}:{c['name']}" for c in _TP["timeline"]) or "—",
+          "| حركات:", " ".join(m["name"] for m in _TP["moves"]))
+    fc.extend(_transitions.video_graph(_TP,PIECES))
 for i,(s,e,crop) in enumerate(PIECES):
-    fc.append(f"[0:v]trim=start={s:.4f}:end={e:.4f},setpts=PTS-STARTPTS,{crop},"
-              f"scale=1080:1920:flags=lanczos,setsar=1[v{i}]")
+    if not _TP:
+        fc.append(f"[0:v]trim=start={s:.4f}:end={e:.4f},setpts=PTS-STARTPTS,{crop},"
+                  f"scale=1080:1920:flags=lanczos,setsar=1[v{i}]")
+        v.append(f"[v{i}]")
     fc.append(f"[0:a]atrim=start={s:.4f}:end={e:.4f},asetpts=PTS-STARTPTS[a{i}]")
-    v.append(f"[v{i}]"); a.append(f"[a{i}]")
-fc.append("".join(v)+f"concat=n={len(PIECES)}:v=1:a=0[vc0]")
+    a.append(f"[a{i}]")
+if not _TP: fc.append("".join(v)+f"concat=n={len(PIECES)}:v=1:a=0[vc0]")
 fc.append("".join(a)+f"concat=n={len(PIECES)}:v=0:a=1[ac0]")
 # سكتة النهاية: آخر فريم يثبت والصوت يسكت (cut.json ← tail)
 fc.append(f"[vc0]tpad=stop_mode=clone:stop_duration={TAIL:.3f}[vc]" if TAIL>0 else "[vc0]null[vc]")

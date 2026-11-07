@@ -227,6 +227,15 @@ python3 scripts/10_script_edit.py <work> undo
 python3 scripts/03_cut_zoom.py <work>
 mkdir -p <work>/vfr && ffmpeg -v error -i <work>/cutz.mp4 -vf fps=30 -q:v 3 -y <work>/vfr/%05d.jpg
 ```
+```
+🎞️ **انتقالات + حركات كاميرا (6.5)** — اختياري، بـ`theme.json` (الافتراضي مطفي = قطع مباشر). مدة الفيديو ما تتغيّر أبداً فالكابشنز والـSFX تبقى مضبوطة:
+`{"transitions":"auto","moves":{"first":"breathe"}}` — أول لقطة zoom in/out (breathe)، والباقي حركات متنوعة.
+• `transitions`: `auto|clean|pop|cinematic|glitch|bold|slide|geometric|off` أو `{"style":"pop","dur":0.25,"seed":7,"overrides":{"2":"glitch"},"off":[4]}` (الأرقام من 1)
+• `moves`: `auto|off` أو `{"first":"breathe","default":"auto","overrides":{"3":"zoom_out"},"amp":0.08}` — zoom_in · zoom_out · breathe · push_slow · pull_slow · punch_in · drift_left/right/up/down
+• 71 انتقال: 57 xfade (wipe/slide/circle/pixelize/radial…) + punch · whip · flash · dip_black · glitch · shake · tilt · blur_zoom. المعرض: `python3 scripts/_transitions.py demo <مجلد> [اسم]`
+• يكتب `transitions.json` بأوقات الانتقالات (للربط مع whoosh).
+```
+
 
 - **الزوم مقفول لكل مقطع (6.0):** أول تشغيل يكتب `cut.json` ← `"zooms": {"25.05": 1.06, …}` (المفتاح بداية المقطع بثواني الأصل).
   تشيل أو تضيف أو تقسم مقطع؟ زوم الباقي ما يتزحلق، فإحداثيات رسمك تبقى صح. تغيّر زوم مقطع = عدّل رقمه. وترتيب `keep` حر (مقطع من آخر الكلام قبل اللي قبله مسموح).
