@@ -162,6 +162,8 @@ ffmpeg -v error -i <work>/src.mov -vn -ac 1 -ar 16000 -y <work>/a.wav
 python3 -m whisper <work>/a.wav --language ar --model medium --word_timestamps True \
   --output_format json --output_dir <work> --fp16 False --verbose False > <work>/whisper.log 2>&1
 ```
+🗣️ **تدقيق اللهجة (6.5):** `python3 scripts/02e_dialect_bench.py ريلك.mp4 --draft` ← صحّح `ref.txt` ← `--ref ref.txt` يقارن الموديلات وبرومبت اللهجة بأرقام WER/CER ويطبع الأحسن. تطبيقه: `WHISPER_MODEL=… WHISPER_PROMPT=syrian` (يشتغل بـ18_long_transcribe.py؛ للتفريغ العادي أضف `--initial_prompt "…"` للأمر فوق).
+
 
 - ياخذ دقايق — شغّله بالخلفية، وقل له كم يتوقع.
 - فشل؟ `tail -5 <work>/whisper.log`
