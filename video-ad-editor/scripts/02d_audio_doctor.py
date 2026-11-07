@@ -8,7 +8,7 @@
   1) فحص: أرضية الضجيج · نغمات المروحة/الطنين (قمم ضيقة بالطيف) · زمن الصدى التقريبي RT60.
   2) نوتش ضيق على نغمات المروحة (بدل ما نخنق الصوت كله).
   3) ضجيج عريض: DeepFilterNet3 لو منصّب (00_setup.sh --extras) وإلا afftdn بأرضية مقيسة من تسجيلك.
-  4) صدى: طرح الذيل المتأخر طيفياً (طريقة Lebart) — تخفيف مو إلغاء كامل، الصدى الثقيل يبقى منه شي.
+  4) صدى: طرح الذيل المتأخر طيفياً (طريقة Lebart) — تخفيف مو إلغاء، وكل ما قوّيته نزل وضوح الكلام قليلاً (قارن بأذنك).
   5) دمج الصوت بالفيديو بنفس سلسلة 02c (قص المنخفض + ضغط + معايرة).
 
 الأصل يُحفظ src_rawaudio.mov — سوّها قبل التفريغ (الخطوة 4) حتى يسمع وِسبر صوتاً نظيفاً.
@@ -113,6 +113,14 @@ def rt60_estimate(x, sr=SR):
     return round(float(min(2.5, max(0.1, -60.0 / np.median(slopes)))), 2)
 
 
+def rt60_calibrated(est):
+    """المقدّر الخام يضغط القيم العالية (كلام نظيف ≈0.25 · RT60 حقيقي 0.3→0.33 · 0.6→0.51 · 0.9→0.65 على صدى اصطناعي) —
+    نمدّه بنقاط المعايرة. تقريبي: معايَر على صدى ضجيجي اصطناعي، مو على غرف حقيقية."""
+    if est is None:
+        return None
+    return round(float(np.interp(est, [0.25, 0.33, 0.51, 0.65], [0.1, 0.3, 0.6, 0.9])), 2)
+
+
 def analyze(x, sr=SR):
     db = frame_db(x, int(sr * 0.02))
     floor, speech = float(np.percentile(db, 10)), float(np.percentile(db, 90))
@@ -123,7 +131,7 @@ def analyze(x, sr=SR):
         "snr_db": round(speech - floor, 1),
         "hum": hp,
         "hum_max_db": max((h[2] for h in hp), default=-90.0),
-        "rt60": rt60_estimate(x, sr),
+        "rt60": rt60_calibrated(rt60_estimate(x, sr)),
     }
 
 
@@ -156,8 +164,8 @@ def dereverb(x, rt60, strength, sr=SR):
     fac = np.exp(-2 * delta * 0.05)
     Pr = np.zeros_like(Py)
     Pr[:, d:] = fac * Py[:, :-d]
-    alpha = 1.0 + 1.5 * strength
-    gmin = 10 ** ((-6 - 12 * strength) / 20)
+    alpha = 0.8 + 0.7 * strength
+    gmin = 10 ** ((-3 - 6 * strength) / 20)
     G = np.sqrt(np.clip(1 - alpha * Pr / (Py + 1e-12), gmin ** 2, 1.0))
     G = uniform_filter1d(G, size=3, axis=1, mode="nearest")
     _, y = istft(Y * G, sr, nperseg=nper, noverlap=nper - hop, window="hann")
@@ -177,8 +185,9 @@ def write_wav(p, x):
 def plan_of(a, dereverb_opt):
     p = {"notch": [(pk[0], pk[1]) for pk in a["hum"] if pk[1] >= 12], "denoise": a["snr_db"] < 45, "dereverb": 0.0}
     if dereverb_opt == "auto":
-        if a["rt60"] and a["rt60"] >= 0.35:
-            p["dereverb"] = round(min(0.9, 0.3 + (a["rt60"] - 0.35) * 1.2), 2)
+        # تلقائي = خفيف عمداً (سقف 0.4): بالاختبار كل زيادة بقوة الصدى تنزّل وضوح الكلام (STOI) — قوّيه يدوياً وقارن بأذنك
+        if a["rt60"] and a["rt60"] >= 0.4:
+            p["dereverb"] = round(min(0.4, 0.15 + (a["rt60"] - 0.35) * 0.8), 2)
     else:
         p["dereverb"] = float(dereverb_opt) if a["rt60"] else 0.0
     return p
@@ -196,6 +205,12 @@ def run(W, strength, dereverb_opt, analyze_only, use_dfn, keep_wav):
         ffmpeg_wav(raw, dry_p)
         dry = D.read_wav(dry_p)
         before = analyze(dry)
+        if before["rt60"] is None:      # الضجيج غطّى الذيول — نقيس على نسخة مخففة (نوتش + afftdn) بس للقياس
+            pre = [notch_chain([(f, e) for f, e, _ in before["hum"] if e >= 12])] if before["hum"] else []
+            nf = int(np.clip(before["floor_db"] - 3, -80, -20))
+            pre_p = os.path.join(tmp, "pre.wav")
+            ffmpeg_wav(dry_p, pre_p, ",".join([c for c in pre if c] + [f"highpass=f=80,afftdn=nf={nf}:nt=w"]))
+            before["rt60"] = rt60_calibrated(rt60_estimate(D.read_wav(pre_p)))
         plan = plan_of(before, dereverb_opt)
         print("🩺 الفحص:", json.dumps(before, ensure_ascii=False), flush=True)
         if analyze_only:
