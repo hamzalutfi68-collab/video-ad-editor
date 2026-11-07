@@ -405,6 +405,8 @@ https://github.com/user-attachments/assets/1047c4e8-141c-4f45-b601-c58d1353fe4c
 
 <b>الإصدارات السابقة</b>
 
+- **6.5.0** (فورك حمزة) دكتور الصوت `02d` (مروحة · ضجيج · صدى) · مكتبة أصوات CC0 حقيقية `sfx_lib.py` · 71 انتقال + حركات كاميرا `_transitions.py` (theme.json ← transitions/moves) · أنماط جاهزة `38_preset.py` (clean · pop · cinematic · bold · glitch · slide) · قياس دقة وِسبر على اللهجة `02e_dialect_bench.py`
+
 - **6.3.0** وضع «اشرح لي شلون يشتغل …»: الجهاز آلة ترتسم وتشتغل (`references/machine-explainer.md` + `motion/examples/machine/`)
 - **6.2.1** دروس ريل «1000$ بيوم» (كابشن chunk · الأرقام ما تنقلب · رجوع نظيف · فحص وِسبر · حجم الريل)
 - **6.2.0** إطار ثابت + جدار شرائح 3D + موشن بلير + شعار 3D بريل الكلام
